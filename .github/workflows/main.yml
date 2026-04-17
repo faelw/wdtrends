@@ -21,7 +21,8 @@ jobs:
 
     - name: Instalar dependências
       run: |
-        pip install google-generativeai python-dotenv
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
     - name: Rodar o Motor de Trends
       env:
