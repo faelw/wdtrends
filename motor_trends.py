@@ -1,129 +1,120 @@
-import google.generativeai as genai
 import json
 import os
 from datetime import datetime
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
-# ---------------------------------------------------------
-# CONFIGURAÇÃO DA API
-# Dica de Segurança: Nunca suba a chave real no GitHub!
-# Use variáveis de ambiente. No terminal: export GEMINI_API_KEY="sua_chave"
-# ---------------------------------------------------------
-api_key = os.environ.get("GEMINI_API_KEY")
+# 1. CARREGAR CHAVE DE SEGURANÇA
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+
 if not api_key:
-    raise ValueError("Chave da API do Gemini não encontrada. Configure a variável de ambiente GEMINI_API_KEY.")
+    raise ValueError("Chave não encontrada! Verifique os Secrets do GitHub.")
 
-genai.configure(api_key=api_key)
-
-# Usando o modelo Pro que é ideal para raciocínio complexo e formatação JSON rigorosa
-model = genai.GenerativeModel('gemini-1.5-pro')
+client = genai.Client(api_key=api_key)
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-# ---------------------------------------------------------
-# DICIONÁRIO DE IDIOMAS E REGIÕES
-# ---------------------------------------------------------
+# 2. CONFIGURAÇÃO DE MERCADOS
 languages = {
     "pt": {"region": "BR", "lang_name": "Português Brasileiro"},
     "en": {"region": "US", "lang_name": "Inglês Americano"},
     "es": {"region": "LATAM", "lang_name": "Espanhol Latino-americano"}
 }
 
-# ---------------------------------------------------------
-# MÓDULO DE COLETA (Scraper Simulado)
-# No futuro, aqui você fará requests para o RapidAPI, X, YouTube, etc.
-# ---------------------------------------------------------
+# 3. MÓDULO DE COLETA (Scraper Bruto)
 def get_raw_data(region):
-    # Simulando dados brutos colhidos da internet
     global_news = """
-    1. Lançamento revolucionário de IA de vídeo gera debate sobre deepfakes e o fim de Hollywood.
-    2. Criptomoeda cai 20% após nova regulamentação mundial surpresa.
+    - Lançamento revolucionário de IA de vídeo gera debate sobre deepfakes.
+    - Criptomoeda cai 20% após nova regulamentação mundial surpresa.
+    - Nova missão espacial anunciada com datas para colonização.
+    - CEO de big tech faz declaração polêmica sobre o futuro do trabalho.
+    - Vazamento massivo de dados afeta milhões de usuários globalmente.
     """
     
     local_news = {
-        "BR": "1. Treta entre influenciadores gigantes no TikTok. 2. Nova lei de taxação de compras online aprovada.",
-        "US": "1. Eleições presidenciais: candidato comete gafe em debate. 2. Super Bowl anuncia atração polêmica.",
-        "LATAM": "1. Final da Copa Libertadores gera memes épicos. 2. Crise diplomática entre países vizinhos."
+        "BR": "- Treta gigante entre influenciadores no TikTok BR.\n- Nova lei de taxação aprovada no congresso.\n- Meme do momento dominando as redes.\n- Final de reality show quebra recorde de votos.",
+        "US": "- Eleições: candidato comete gafe ao vivo.\n- Super Bowl anuncia atração principal.\n- Empresa americana demite 10 mil funcionários.\n- Nova trend de dança domina as escolas.",
+        "LATAM": "- Crise diplomática entre países vizinhos.\n- Final da Copa Libertadores gera confusão.\n- Artista latino bate recorde no Spotify.\n- Protestos em massa por conta da economia."
     }
     
-    return global_news, local_news.get(region, "Sem dados locais")
+    return global_news, local_news.get(region, "Sem dados locais detalhados no momento.")
 
-# ---------------------------------------------------------
-# O CÉREBRO: CHAMADA AO GEMINI
-# ---------------------------------------------------------
+# 4. O MOTOR DA IA (Gerador de Insights)
 def generate_creator_insights(lang_code, lang_info, global_data, local_data):
     prompt = f"""
     Atue como um estrategista de conteúdo viral para YouTube, TikTok e Canais Dark no mercado {lang_info['lang_name']} (Foco na região: {lang_info['region']}).
     
-    FONTES GLOBAIS (O que o mundo fala): {global_data}
-    FONTES LOCAIS (O que a região {lang_info['region']} fala): {local_data}
+    FONTES GLOBAIS: {global_data}
+    FONTES LOCAIS: {local_data}
 
-    Sua missão é mastigar essas informações brutas e entregar ideias de ouro prontas para criadores de conteúdo gravarem.
-    Gere exatamente 2 tópicos globais e 2 tópicos locais (para este teste. No futuro serão 10 de cada).
+    Sua missão é criar um JSON contendo 30 tendências no total, divididas em duas categorias:
+    - 15 tópicos em 'global_trends'
+    - 15 tópicos em 'local_trends'
     
-    Para cada tópico, gere 10 'micro_insights' usando ESTRITAMENTE estes 'types':
-    - 'title_idea': Ideia de título magnético/clickbait.
-    - 'thumbnail_idea': Ideia visual para a capa.
-    - 'hook': O texto para os primeiros 3 segundos de vídeo (o gancho).
-    - 'angle_news': Como abordar se for canal de Notícias.
-    - 'angle_dark': Como abordar se for Canal Dark (mistério, curiosidade, bizarro).
-    - 'tags': 5 palavras-chave.
-    - 'audience_feeling': A emoção alvo (ex: revolta, choque, curiosidade).
-    - 'monetization': Ideia de venda/afiliado para o vídeo.
-    - 'controversy': O ponto polêmico para gerar comentários no vídeo.
-    - 'call_to_action': Como pedir inscrição/like.
+    Para CADA UM dos 30 tópicos, gere ESTRITAMENTE 10 'micro_insights' práticos usando estas chaves 'type':
+    1. 'title_idea': Ideia de título magnético/clickbait.
+    2. 'thumbnail_idea': Ideia visual para a capa do vídeo.
+    3. 'hook': Roteiro dos primeiros 3 segundos de vídeo (o gancho).
+    4. 'angle_news': Abordagem para canal de Notícias.
+    5. 'angle_dark': Abordagem para Canal Dark (mistério, bizarro).
+    6. 'tags': 5 palavras-chave separadas por vírgula.
+    7. 'audience_feeling': A emoção alvo que o vídeo deve causar.
+    8. 'monetization': Ideia de produto/afiliado para vender no vídeo.
+    9. 'controversy': O ponto polêmico para gerar debate nos comentários.
+    10. 'call_to_action': Como pedir inscrição ou like de forma orgânica.
 
-    A resposta deve ser ESTRITAMENTE o JSON abaixo, no idioma {lang_info['lang_name']}:
+    O retorno DEVE ser APENAS o JSON válido abaixo, no idioma {lang_info['lang_name']}:
     {{
       "region": "{lang_info['region']}",
       "language": "{lang_code}",
       "update_time": "{current_time}",
       "global_trends": [
-         {{ "id": "g_01", "title": "Título do Assunto", "micro_insights": [ {{"type": "tipo_aqui", "text": "texto do insight..."}} ] }}
+         {{ "id": "g_01", "title": "Título", "micro_insights": [ {{"type": "tipo", "text": "texto do insight"}} ] }}
       ],
       "local_trends": [
-         {{ "id": "l_01", "title": "Título do Assunto", "micro_insights": [ {{"type": "tipo_aqui", "text": "texto do insight..."}} ] }}
+         {{ "id": "l_01", "title": "Título", "micro_insights": [ {{"type": "tipo", "text": "texto do insight"}} ] }}
       ]
     }}
     """
 
-    print(f"Processando tendências em {lang_info['lang_name']}...")
+    print(f"[{lang_code.upper()}] Solicitando Insights para a IA...")
     
-    response = model.generate_content(
-        prompt,
-        generation_config={"response_mime_type": "application/json"}
+    # MUDANÇA AQUI: Atualizado para o modelo gemini-2.0-flash
+    response = client.models.generate_content(
+        model='gemini-2.0-flash', 
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            temperature=0.7,
+        )
     )
     
     return response.text
 
-# ---------------------------------------------------------
-# LOOP PRINCIPAL
-# ---------------------------------------------------------
+# 5. LOOP DE EXECUÇÃO
 def main():
-    print("Iniciando Macro Ultra - Varredura e Análise...")
+    print("Iniciando Macro Ultra com SDK Atualizado (Modelo Flash)...")
     
     for lang_code, lang_info in languages.items():
         try:
-            # 1. Coleta os dados brutos da região
             global_raw, local_raw = get_raw_data(lang_info['region'])
             
-            # 2. Envia para a IA analisar e estruturar
             json_output = generate_creator_insights(lang_code, lang_info, global_raw, local_raw)
-            
-            # 3. Valida se a IA realmente retornou um JSON válido
             parsed_json = json.loads(json_output)
             
-            # 4. Salva no disco
             file_name = f"trends_{lang_code}.json"
             with open(file_name, "w", encoding="utf-8") as f:
                 json.dump(parsed_json, f, ensure_ascii=False, indent=2)
                 
-            print(f"✅ Sucesso: {file_name} gerado e estruturado.")
+            print(f"✅ Sucesso: {file_name} gerado.")
             
         except json.JSONDecodeError:
-            print(f"❌ Erro de JSON: A IA não retornou um formato válido para {lang_code}.")
+            print(f"❌ Erro de JSON em {lang_code}.")
         except Exception as e:
-            print(f"❌ Erro ao processar {lang_code}: {e}")
+            print(f"❌ Erro crítico ao processar {lang_code}: {e}")
 
-    print("\nVarredura concluída. Verifique os arquivos JSON na pasta do projeto.")
+    print("\nProcesso concluído.")
 
 if __name__ == "__main__":
     main()
