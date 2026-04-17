@@ -2,9 +2,9 @@ name: Executar Macro Ultra Trends
 
 on:
   schedule:
-    # Rodar a cada 4 horas (formato Cron)
+    # Rodar a cada 4 horas
     - cron: '0 */4 * * *'
-  workflow_dispatch: # Permite que você rode manualmente clicando num botão
+  workflow_dispatch: # Permite rodar manualmente clicando num botão
 
 jobs:
   build:
@@ -12,10 +12,10 @@ jobs:
 
     steps:
     - name: Baixar o código do repositório
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4 # ATUALIZADO PARA v4
 
     - name: Configurar o Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5 # ATUALIZADO PARA v5
       with:
         python-version: '3.9'
 
@@ -25,12 +25,11 @@ jobs:
 
     - name: Rodar o Motor de Trends
       env:
-        # Aqui o GitHub pega a chave do "cofre" e entrega para o Python
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: python macro_ultra.py
 
     - name: Salvar os JSONs gerados
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4 # ATUALIZADO PARA v4
       with:
         name: trends-json-files
         path: trends_*.json
