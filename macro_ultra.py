@@ -1,20 +1,19 @@
-import google.generativeai as genai
 import json
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 # 1. CARREGAR CHAVE DE SEGURANÇA
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 
 if not api_key:
-    raise ValueError("Chave não encontrada! Verifique se o arquivo .env existe e está correto.")
+    raise ValueError("Chave não encontrada! Verifique os Secrets do GitHub.")
 
-genai.configure(api_key=api_key)
-
-# Usando o modelo Pro (ideal para textos longos e JSON complexo)
-model = genai.GenerativeModel('gemini-1.5-pro')
+# Inicializa o cliente na NOVA biblioteca do Google
+client = genai.Client(api_key=api_key)
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 
 # 2. CONFIGURAÇÃO DE MERCADOS
@@ -26,8 +25,6 @@ languages = {
 
 # 3. MÓDULO DE COLETA (Scraper Bruto)
 def get_raw_data(region):
-    # No ambiente de produção, conecte APIs do X, TikTok, Google Trends aqui.
-    # Esta é a base de dados simulada para a IA ler e expandir.
     global_news = """
     - Lançamento revolucionário de IA de vídeo gera debate sobre deepfakes.
     - Criptomoeda cai 20% após nova regulamentação mundial surpresa.
@@ -75,52 +72,50 @@ def generate_creator_insights(lang_code, lang_info, global_data, local_data):
       "update_time": "{current_time}",
       "global_trends": [
          {{ "id": "g_01", "title": "Título", "micro_insights": [ {{"type": "tipo", "text": "texto do insight"}} ] }}
-         // ... continue até g_15
       ],
       "local_trends": [
          {{ "id": "l_01", "title": "Título", "micro_insights": [ {{"type": "tipo", "text": "texto do insight"}} ] }}
-         // ... continue até l_15
       ]
     }}
     """
 
-    print(f"[{lang_code.upper()}] Solicitando 30 Trends e 300 Insights para o Gemini. Aguarde...")
+    print(f"[{lang_code.upper()}] Solicitando Insights para a IA...")
     
-    response = model.generate_content(
-        prompt,
-        generation_config={"response_mime_type": "application/json"}
+    # Nova sintaxe de chamada com a biblioteca atualizada
+    response = client.models.generate_content(
+        model='gemini-1.5-pro',
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            temperature=0.7,
+        )
     )
     
     return response.text
 
 # 5. LOOP DE EXECUÇÃO
 def main():
-    print("Iniciando Macro Ultra - Varredura Massiva...")
+    print("Iniciando Macro Ultra com SDK Atualizado...")
     
     for lang_code, lang_info in languages.items():
         try:
-            # Pega os dados simulados
             global_raw, local_raw = get_raw_data(lang_info['region'])
             
-            # Gera os dados com a IA
             json_output = generate_creator_insights(lang_code, lang_info, global_raw, local_raw)
-            
-            # Valida e converte para dicionário Python
             parsed_json = json.loads(json_output)
             
-            # Salva no disco formatado
             file_name = f"trends_{lang_code}.json"
             with open(file_name, "w", encoding="utf-8") as f:
                 json.dump(parsed_json, f, ensure_ascii=False, indent=2)
                 
-            print(f"✅ Sucesso: {file_name} gerado (30 trends processadas).")
+            print(f"✅ Sucesso: {file_name} gerado.")
             
         except json.JSONDecodeError:
-            print(f"❌ Erro de JSON: O Gemini cortou a resposta no meio para {lang_code} (provável limite de tokens).")
+            print(f"❌ Erro de JSON em {lang_code}.")
         except Exception as e:
             print(f"❌ Erro crítico ao processar {lang_code}: {e}")
 
-    print("\nProcesso concluído. Arquivos salvos na pasta raiz.")
+    print("\nProcesso concluído.")
 
 if __name__ == "__main__":
     main()
