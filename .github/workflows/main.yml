@@ -1,0 +1,36 @@
+name: Executar Macro Ultra Trends
+
+on:
+  schedule:
+    # Rodar a cada 4 horas (formato Cron)
+    - cron: '0 */4 * * *'
+  workflow_dispatch: # Permite que você rode manualmente clicando num botão
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Baixar o código do repositório
+      uses: actions/checkout@v3
+
+    - name: Configurar o Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Instalar dependências
+      run: |
+        pip install google-generativeai python-dotenv
+
+    - name: Rodar o Motor de Trends
+      env:
+        # Aqui o GitHub pega a chave do "cofre" e entrega para o Python
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: python macro_ultra.py
+
+    - name: Salvar os JSONs gerados
+      uses: actions/upload-artifact@v3
+      with:
+        name: trends-json-files
+        path: trends_*.json
